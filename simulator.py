@@ -365,9 +365,9 @@ if __name__ == '__main__':
 	elif option == '3':
 		obj1 = Manual_Player()
 		obj2 = Manual_Player()
-	elif option == '4':
-		obj1 = Team7()
-		obj2 = Random_Player()
+	# elif option == '4':
+	# 	obj1 = Team7()
+	# 	obj2 = Random_Player()
 	else:
 		print 'Invalid option'
 		sys.exit(1)
