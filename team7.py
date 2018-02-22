@@ -73,7 +73,7 @@ class Team7:
                 elif(dictVal*diam3 < 0):
                     diam3 = 0
                 diam3 *= 16
-            mark = board/board_status[4*blx + 2 + xx[i]][4*bly + 2 + yy[i]]
+            mark = board.board_status[4*blx + 2 + xx[i]][4*bly + 2 + yy[i]]
             dictVal = self.dict[mark]
             if(dictVal!=0):
                 if(diam4 == 3):
