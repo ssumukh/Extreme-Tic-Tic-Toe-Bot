@@ -347,27 +347,41 @@ if __name__ == '__main__':
 
 	if len(sys.argv) != 2:
 		print 'Usage: python simulator.py <option>'
-		print '<option> can be 1 => Random player vs. Random player'
-		print '                2 => Human vs. Random Player'
-		print '                3 => Human vs. Human'
+		print '<option> can be 1 => Human vs. Computer'
+		print '                2 => Computer vs. Random Player'
+		print '                3 => Human vs. Random Player'
+		print '                4 => Human vs. Human'
+		print '				   5 => Computer vs Computer'
 		sys.exit(1)
  
 	obj1 = ''
 	obj2 = ''
 	option = sys.argv[1]	
 	if option == '1':
-		obj1 = Random_Player()
-		obj2 = Random_Player()
+		obj1 = Manual_Player()
+		obj2 = Team7()
 
 	elif option == '2':
-		obj1 = Random_Player()
+		obj1 = Team7()
 		obj2 = Manual_Player()
 	elif option == '3':
 		obj1 = Manual_Player()
+		obj2 = Random_Player()
+	elif option == '4':
+		obj1 = Manual_Player()
 		obj2 = Manual_Player()
-	# elif option == '4':
-	# 	obj1 = Team7()
-	# 	obj2 = Random_Player()
+	elif option == '5':
+		obj1 = Team7()
+		obj2 = Team7()
+	# elif option == '6':
+	# 	obj1 = Team7_2()
+	# 	obj2 = BotMilitia()
+	# elif option == '7':
+	# 	obj2 = Team7_2()
+	# 	obj1 = Player7()
+	# elif option == '8':
+	# 	obj2 = TeamZ1()
+	# 	obj1 = TeamZ2()
 	else:
 		print 'Invalid option'
 		sys.exit(1)

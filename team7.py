@@ -1,495 +1,258 @@
-from __future__ import print_function
-import copy
-import random
-import datetime
+import random, datetime, copy
 
 INFINITY = 1e10
 
 class Team7:
     def __init__(self):
         self.termVal = INFINITY
+
+        self.weight = [2,3,3,2,3,4,4,3,3,4,4,3,2,3,3,2]
+        self.blocknormal = 120
         self.limit = 5
-        self.count = 0
-        self.weight = [2,4,4,2,4,3,3,4,4,3,3,4,2,4,4,2]
         self.dict = {'x':1,'o':-1,'-':0,'d':0}
         self.trans = {}
-        self.timeLimit = datetime.timedelta(seconds = 14)
+        self.normalize = 5
+        self.timeLimit = datetime.timedelta(seconds = 15)
         self.begin = INFINITY
         self.limitReach = 0
+        self.tle = 0
 
-    def evaluate(self,board,blx,bly,tmpBlock):
-        # print("Calculating for block ",blx, " " , bly)
-        # mark = board.block_status[blx][bly]
-        # if(mark=='x' or mark=='o' or mark=='d'):
-        #     return 0
+    
+    def elemEval(self, board, blx, bly, tmpBlock, blkFlg):
+        elemVal = 0                                         # storing the calculated value of that element
+        
+         # initial value of each of the patters possible
 
-        val = 0
-        rowCnt = [3,3,3,3]
-        colCnt = [3,3,3,3]
+        # nulVal = 0
+        stdVal = 3
+
+        rowVals = []
+        colVals = []
+        diam = []
+
         for i in xrange(4):
+            rowVals.append(stdVal)
+            colVals.append(stdVal)
+            diam.append(stdVal)
+            
+        
+        diamNXPos   = [1,1,2,2]                                 # setting position of the 4 diamond patterns and the blocks in each
+        diamNYPos   = [1,2,1,2]
+        diamBXPos   = [0,-1,0,1]
+        diamBYPos   = [-1,0,1,0]
+
+        for i in xrange(4):                                     # checking with patterns in rows and columns
             for j in xrange(4):
-                mark = board.board_status[4*blx+i][4*bly+j]
-                # print("hi")
-                dictVal = self.dict[mark]
-                if(dictVal!=0):
-                    val+=dictVal*self.weight[4*i+j]
-                    if (rowCnt[i]==3):
-                        rowCnt[i] = dictVal*5
-                    elif(dictVal*rowCnt[i]<0):
-                        rowCnt[i] = 0
-                    rowCnt[i]=rowCnt[i]*16
-                    if (colCnt[j]==3):
-                        colCnt[j] = dictVal*5
-                    elif(dictVal*colCnt[j]<0):
-                        colCnt[j] = 0
-                    colCnt[j]=colCnt[j]*16
-        # print(rowCnt,colCnt)
+                if(blkFlg):
+                    elem = tmpBlock[i][j]
+                else:
+                    elem = board.board_status[4*blx+i][4*bly+j] # reading the mark which is at the position (i,j), and each block is checked
+                dictVal = self.dict[elem]                       # the value of that mark is stored locally (-1 or +1 or 0)
+                if(dictVal != 0):                               # if the block is a 'o' or 'x'
+                    elemVal += dictVal * self.weight[4*i + j]   # add the weight of that position to the value after multiplying it with the respective value of that mark (-1 or 1)
+                    if (rowVals[i] == 3):                       # if this is the first 'o' or 'x' in that row
+                        rowVals[i] = dictVal*self.normalize                  # change the row pattern value
+                    elif(dictVal * rowVals[i] < 0):             # if the mark is a 'o'
+                        rowVals[i] = 0                          # set row value to zero
+                    rowVals[i] *= 16                            # multiply the value for that row pattern
 
-        xx = [0,-1,0,1]
-        yy = [-1,0,1,0]
-        diam1,diam2,diam3,diam4 = 3,3,3,3
-        for i in xrange(4):
-            mark = board.board_status[4*blx + 1 + xx[i]][4*bly + 1 + yy[i]]
-            dictVal = self.dict[mark]
-            if(dictVal):
-                if(diam1 == 3):
-                    diam1 = dictVal*5
-                elif(dictVal*diam1 < 0):
-                    diam1 = 0
-                diam1 *= 16
-            mark = board.board_status[4*blx + 1 + xx[i]][4*bly + 2 + yy[i]]
-            dictVal = self.dict[mark]
-            if(dictVal):
-                if(diam2 == 3):
-                    diam2 = dictVal*5
-                elif(dictVal*diam2<0):
-                    diam2 = 0
-                diam2 *= 16
-            mark = board.board_status[4*blx + 2 + xx[i]][4*bly + 1 + yy[i]]
-            dictVal = self.dict[mark]
-            if(dictVal!=0):
-                if(diam3==3):
-                    diam3 = dictVal * 5
-                elif(dictVal*diam3 < 0):
-                    diam3 = 0
-                diam3 *= 16
-            mark = board.board_status[4*blx + 2 + xx[i]][4*bly + 2 + yy[i]]
-            dictVal = self.dict[mark]
-            if(dictVal!=0):
-                if(diam4 == 3):
-                    diam4 = dictVal * 5
-                elif(dictVal*diam4 < 0):
-                    diam4 = 0
-                diam4 *= 16
-
-        #commented out coz u know
-        # diag1,diag2 = 3,3
-        # for i in xrange(4):
-        #         mark = board.board_status[4*blx+i][4*bly+i]
-        #         dictVal = self.dict[mark]
-        #         if(dictVal!=0):
-        #             if(diag1==3):
-        #                 diag1 = dictVal*5
-        #             elif(dictVal*diag1<0):
-        #                 diag1 = 0
-        #             diag1=diag1*16
-        #         mark = board.board_status[4*blx+i][4*bly+3-i]
-        #         dictVal = self.dict[mark]
-        #         if(dictVal!=0):
-        #             if(diag2==3):
-        #                 diag2 = dictVal*5
-        #             elif(dictVal*diag2<0):
-        #                 diag2 = 0
-        #             diag2=diag2*16
-
-        #commented out coz u know
-        # draw = 10
-        # for i in xrange(4):
-        #     if(rowCnt[i]==0):
-        #         draw-=1
-        #     if(colCnt[i]==0):
-        #         draw-=1
-        # if(diag1==0):
-        #     draw-=1
-        # if(diag2==0):
-        #     draw-=1
-        # if(draw==0):
-        #     # print("because of draw for block ",blx,bly)
-        #     # board.print_board()
-        #     tmpBlock[blx][bly] = 'd'
-        #     return 0
-
-        #commented out coz u know
-        # for i in xrange(4):
-        #     if(rowCnt[i]!=3):
-        #         val+=rowCnt[i]
-        #     if(colCnt[i]!=3):
-        #         val+=colCnt[i]
-
-        #commented out coz u know
-        # if(diag1!=3):
-        #     val+=diag1
-        # if(diag2!=3):
-        #     val+=diag2
-
-        draw = 12
-        for i in xrange(4):
-            if(rowCnt[i]==0):
-                draw-=1
-            if(colCnt[i]==0):
-                draw-=1
-        if(diam1==0):
-            draw-=1
-        if(diam2==0):
-            draw-=1
-        if(diam3==0):
-            draw-=1
-        if(diam4==0):
-            draw-=1
-
-        if(draw==0):
-            # print("because of draw for block ",blx,bly)
-            # board.print_board()
-            tmpBlock[blx][bly] = 'd'
-            return 0
-
-        for i in xrange(4):
-            if(rowCnt[i]!=3):
-                val+=rowCnt[i]
-            if(colCnt[i]!=3):
-                val+=colCnt[i]
-
-        if(diam1!=3):
-            val+=diam1
-        if(diam2!=3):
-            val+=diam2
-        if(diam3!=3):
-            val+=diam3
-        if(diam4!=3):
-            val+=diam4
-
-        return val
-
-    def blockEval(self,board,tmpBlock):
-        val = 0
-        rowCnt = [3,3,3,3]
-        colCnt = [3,3,3,3]
-        for i in xrange(4):
-            for j in xrange(4):
-                mark = tmpBlock[i][j]
-                dictVal = self.dict[mark]
-                if(mark!='-'):
-                    # print("Heuristic involves block ",i,j)
-                    val+=dictVal*self.weight[4*i+j]
-                    if (rowCnt[i]==3):
-                        rowCnt[i] = dictVal*5
-                    elif(dictVal*rowCnt[i]<=0):
-                        rowCnt[i] = 0
-                    rowCnt[i]=rowCnt[i]*16
-                    if (colCnt[j]==3):
-                        colCnt[j] = dictVal*5
-                    elif(dictVal*colCnt[j]<=0):
-                        colCnt[j] = 0
-                    colCnt[j]=colCnt[j]*16
-
-        diam = [3,3,3,3]
-        x1   = [1,1,2,2]
-        y1   = [1,2,1,2]
-        xx = [0,-1,0,1]
-        yy = [-1,0,1,0]
-
-        for i in xrange(4):
-            for j in xrange(4):
-                mark = tmpBlock[ x1[j]+xx[i] ][ y1[j]+yy[i] ]
-                if(mark!='-'):
-                    dictVal = self.dict[mark]
-                    if(diam[j] == 3):
-                        diam[j] = dictVal*5
-                    elif(diam[j]*dictVal <= 0):
+                    if (colVals[j] == 3):                       # if this is the first 'o' or 'x' in that column
+                        colVals[j] = dictVal * self.normalize                # change the column value
+                    elif(dictVal * colVals[j] < 0):             # if the mark is 'o'
+                        colVals[j] = 0                          # set column to zero
+                    colVals[j] *= 16
+                    
+                    # if (dictVal == -1):
+                    #     enemRow[i]  += 1
+                    #     enemCol[j]  += 1
+                    # else:
+                    #     unitRow[i] += 1
+                    #     unitCol[j] += 1
+                # checking for the diamond patterns now
+                if(blkFlg):
+                    elem = tmpBlock[ diamNXPos[j] + diamBXPos[i] ][ diamNYPos[j] + diamBYPos[i] ]
+                else:
+                    elem = board.board_status[4*blx + diamNXPos[j] + diamBXPos[i]][4*bly + diamNYPos[j] + diamBYPos[i]]
+                dictVal = self.dict[elem]                       # get the value of the required element
+                if(dictVal):
+                    if(diam[j] == 3):                           # if its the first element in that pattern, set the value high
+                        diam[j] = dictVal * self.normalize
+                    elif(diam[j]*dictVal < 0):                  # if there's another element in that pattern, set it to zero (d or enemy mark)
                         diam[j] = 0
-                    diam[j] *= 16 * dictVal * dictVal
+                    diam[j] *= 16                               # if the value if non zero, the value of that element gets higher
+                    
+                    # if(dictVal == -1):
+                    #     enemDiam[j] += 1
+                    # else:
+                    #     unitDiam[j] += 1
 
-        #commented coz u know
-        # diag1,diag2 = 3,3
-        # for i in xrange(4):
-        #         mark = tmpBlock[i][i]
-        #         if(mark!='-'):
-        #             dictVal = self.dict[mark]
-        #             if(diag1==3):
-        #                 diag1 = dictVal*5
-        #             elif(dictVal*diag1<=0):
-        #                 diag1 = 0
-        #             diag1=diag1*16*dictVal*dictVal
-        #         mark = tmpBlock[i][3-i]
-        #         if(mark!='-'):
-        #             dictVal = self.dict[mark]
-        #             if(diag2==3):
-        #                 diag2 = dictVal*5
-        #             elif(dictVal*diag2<=0):
-        #                 diag2 = 0
-        #             diag2=diag2*16*dictVal*dictVal
+        if(blkFlg == 0):
+            checkDraw = 12
+            for itr in xrange(4):                       # check for the draws in each pattern
+                if(colVals[itr] == 0):
+                    checkDraw -= 1
+                if(rowVals[itr] == 0):
+                    checkDraw -= 1
+                if(diam[itr] == 0):
+                    checkDraw -= 1
 
-        for i in xrange(4):
-            if(rowCnt[i]!=3):
-                val += rowCnt[i]
-            if(colCnt[i]!=3):
-                val += colCnt[i]
-            if(diam[i] != 3):
-                val += diam[i]
-        # draw = 10
-        # for i in xrange(4):
-        #     if(rowCnt[i]==0):
-        #         draw-=1
-        #     if(colCnt[i]==0):
-        #         draw-=1
-        # if(diag1==0):
-        #     draw-=1
-        # if(diag2==0):
-        #     draw-=1
-        #
-        # if(draw==0):
-        #     print("because of draw for game ")
-        #     board.print_board()
-        #     if()
-            # return 0
+            if(checkDraw == 0):
+                tmpBlock[blx][bly] = 'd'                # if draw, set tmpBlock, thats a deepcopy of the boardstatus from the heuristic function, to 'd'
+                return 0
 
-        #commented out coz u know
-        # if(diag1!=3):
-        #     val+=diag1
-        # if(diag2!=3):
-        #     val+=diag2
 
-        # print("val is ",val)
-        return val
+        for itr in xrange(4):
+            if(rowVals[itr] != 3):
+                elemVal += rowVals[itr]
+            if(colVals[itr] != 3):
+                elemVal += colVals[itr]
+            if(diam[itr] != 3):
+                elemVal += diam[itr]
+
+        return elemVal
 
     def heuristic(self, board):
-        tmpBlock = copy.deepcopy(board.block_status)
-        final = 0
-        # print("Calculating heur")
+        val = 0
+        tempBlock = copy.deepcopy(board.block_status)
+        
         for i in xrange(4):
             for j in xrange(4):
-                aaja = self.evaluate(board,i,j,tmpBlock)
-                # print(aaja,i,j)
-                final += aaja
-        final += self.blockEval(board,tmpBlock)*120
-        del(tmpBlock)
-        # return (50, old_move)
-        # print("final is ",final)
-        return final
+                val += self.elemEval(board,i,j,tempBlock,0)
+        
+        val += self.elemEval(board,0,0,tempBlock,1)*self.blocknormal
+        del(tempBlock)
+        
+        return val
 
     def alphaBeta(self, board, old_move, flag, depth, alpha, beta):
-        # Assuming 'x' to be the maximising player
-
-        # print("old move is ",old_move)
-
-        hashval = hash(str(board.board_status))
+        hashval = hash(str(board.board_status)) # check exists in transition table
         if(self.trans.has_key(hashval)):
-            # print("hash exists")
             bounds = self.trans[hashval]
-            if(bounds[0] >= beta):
+            if(beta <= bounds[0]):
                 return bounds[0],old_move
-            if(bounds[1] <= alpha):
+            if(alpha >= bounds[1]):
                 return bounds[1],old_move
-            # print("also returning")
             alpha = max(alpha,bounds[0])
             beta = min(beta,bounds[1])
 
-        # print(len(cells), ": length of cells")
-        # print("old move is ",old_move,hashval)
-        # nodeVal = 0,cells[0]
-        # beta = b
-        # alpha = a
-        #
-        # if(board.find_terminal_state()[0] == 'x'):
-        #     nodeVal = self.termVal, old_move
-        #
-        # elif(board.find_terminal_state()[0] == 'o'):
-        #     nodeVal = -1*self.termVal, old_move
-        #
-        # elif(self.trans.has_key(hashval)):
-        #     bounds = self.trans[hashval]
-        #     if(bounds[0] >= b):
-        #         return bounds[0]
-        #     if(bounds[1] <= a):
-        #         return bounds[1]
-        #     a = max(a,bounds[0])
-        #     b = min(b,bounds[1])
-
-        # if(board.find_terminal_state()[0] == 'NONE' or depth > self.limit):
-        #     print("while returning heur")
-        #     # board.print_board()
-        #     heurVal = self.heuristic(board)
-        #     print("final returned as ",heurVal)
-        #     nodeVal = heurVal,old_move
-        #     print("hello")
-
-        # random.shuffle(cells)
-        # print(cells)
-
         cells = board.find_valid_move_cells(old_move)
         random.shuffle(cells)
-        # print(len(cells), ": length of cells")
-        if (flag == 'x'):
-            nodeVal = -INFINITY, cells[0]
-            new = 'o'
+
+        p = self.dict[flag]
+        if (p):
+            nodeVal = -1*p*INFINITY,cells[0]
+            new = ''
+            a,b = 0,0
+            emp = 'NONE'
             tmp = copy.deepcopy(board.block_status)
-            a = alpha
+
+            if (p == 1):
+                new = 'o'
+                a = alpha
+                
+            elif (p == -1):
+                new = 'x'
+                b = beta
 
             for chosen in cells :
                 if datetime.datetime.utcnow() - self.begin >= self.timeLimit :
-                    # print("breaking at depth ",depth)
                     self.limitReach = 1
                     break
                 board.update(old_move, chosen, flag)
-                # print("chosen ",chosen)
-                if (board.find_terminal_state()[0] == 'x'):
+                if (board.find_terminal_state()[0] == flag):
                     board.board_status[chosen[0]][chosen[1]] = '-'
                     board.block_status = copy.deepcopy(tmp)
-                    nodeVal = self.termVal,chosen
+                    nodeVal = p*self.termVal,chosen
                     break
-                elif (board.find_terminal_state()[0] == 'o'):
+                elif (board.find_terminal_state()[0] == new):
                     board.board_status[chosen[0]][chosen[1]] = '-'
                     board.block_status = copy.deepcopy(tmp)
                     continue
-                elif(board.find_terminal_state()[0] == 'NONE'):
-                    x = 0
-                    d = 0
-                    o = 0
+                elif(board.find_terminal_state()[0] == emp):
+                    x,o,d = 0,0,0
                     tmp1 = 0
-                    for i2 in xrange(4):
-                        for j2 in xrange(4):
-                            if(board.block_status[i2][j2] == 'x'):
+
+                    for col in board.block_status:
+                        for el in col:
+                            if (el == 'x'):
                                 x += 1
-                            if(board.block_status[i2][j2] == 'o'):
+                            
+                            if (el == 'o'):
                                 o += 1
-                            if(board.block_status[i2][j2] == 'd'):
+                            
+                            if (el == 'd'):
                                 d += 1
+
                     if(x==o):
                         tmp1 = 0
                     elif(x>o):
                         tmp1 = INFINITY/2 + 10*(x-o)
                     else:
                         tmp1 = -INFINITY/2 - 10*(o-x)
-                    # print(tmp1)
+ 
                 elif( depth >= self.limit):
                     tmp1 = self.heuristic(board)
-                    # print("Heuristic value for ",chosen," is ",tmp1)
+
                 else:
-                    tmp1 = self.alphaBeta(board, chosen, new, depth+1, a, beta)[0]
+                    if (p==1):
+                        tmp1 = self.alphaBeta(board, chosen, new, depth+1, a, beta)[0]
+
+                    elif (p==-1):
+                        tmp1 = self.alphaBeta(board, chosen, new, depth+1, alpha, b)[0]
 
                 board.board_status[chosen[0]][chosen[1]] = '-'
                 board.block_status = copy.deepcopy(tmp)
-                if(nodeVal[0] < tmp1):
-                    nodeVal = tmp1,chosen
-                # print("hi nodeval ",nodeVal)
-                a = max(a, tmp1)
-                if beta <= nodeVal[0] :
-                    break
+                
+                if (p == 1):
+                    if(nodeVal[0] < tmp1):
+                        nodeVal = tmp1,chosen
+
+                    a = max(a, tmp1)
+                    if beta <= nodeVal[0] :
+                        break
+
+                if (p == -1):
+                    if(tmp1 < nodeVal[0]):
+                        nodeVal = tmp1,chosen
+                    
+                    b = min(b, tmp1)
+                    if nodeVal[0] <= alpha:
+                        break
+
             del(tmp)
 
-        if (flag == 'o'):
-            nodeVal = INFINITY, cells[0]
-            new = 'x'
-            tmp = copy.deepcopy(board.block_status)
-            b = beta
-
-            for chosen in cells :
-                if datetime.datetime.utcnow() - self.begin >= self.timeLimit :
-                    self.limitReach = 1
-                    break
-                board.update(old_move, chosen, flag)
-                # print("chosen ",chosen)
-                if(board.find_terminal_state()[0] == 'o'):
-                    board.board_status[chosen[0]][chosen[1]] = '-'
-                    board.block_status = copy.deepcopy(tmp)
-                    nodeVal = -1*self.termVal,chosen
-                    break
-                elif(board.find_terminal_state()[0] == 'x'):
-                    board.board_status[chosen[0]][chosen[1]] = '-'
-                    board.block_status = copy.deepcopy(tmp)
-                    continue
-                elif(board.find_terminal_state()[0] == 'NONE'):
-                    x = 0
-                    d = 0
-                    o = 0
-                    tmp1 = 0
-                    for i2 in range(4):
-                        for j2 in range(4):
-                            if board.block_status[i2][j2] == 'x':
-                                x += 1
-                            if board.block_status[i2][j2] == 'o':
-                                o += 1
-                            if board.block_status[i2][j2] == 'd':
-                                d += 1
-                    if(x==o):
-                        tmp1 = 0
-                    elif(x>o):
-                        tmp1 = INFINITY/2 + 10*(x-o)
-                    else:
-                        tmp1 = -INFINITY/2 - 10*(o-x)
-                    # print(tmp1)
-                elif(depth >= self.limit):
-                    tmp1 = self.heuristic(board)
-                    # print("Heuristic value for ",chosen," is ",tmp1)
-                else:
-                    tmp1 = self.alphaBeta(board, chosen, new, depth+1, alpha, b)[0]
-                board.board_status[chosen[0]][chosen[1]] = '-'
-                board.block_status = copy.deepcopy(tmp)
-                if(nodeVal[0] > tmp1):
-                    nodeVal = tmp1,chosen
-                b = min(b, tmp1)
-                if alpha >= nodeVal[0] :
-                    break
-            del(tmp)
-
-        # print("return value is ",nodeVal)
-        if(nodeVal[0] <= alpha):
+        if(alpha >= nodeVal[0]):
             self.trans[hashval] = [-INFINITY,nodeVal[0]]
-        if(nodeVal[0] > alpha and nodeVal[0] < beta):
+        
+        if(alpha < nodeVal[0] and beta > nodeVal[0]):
             self.trans[hashval] = [nodeVal[0],nodeVal[0]]
-        if(nodeVal[0]>=beta):
+        
+        if(beta <= nodeVal[0]):
             self.trans[hashval] = [nodeVal[0],INFINITY]
-        # print(self.trans.items())
+
         return nodeVal
 
-    def mtd(self,board,old_move,flag,depth,f):
-        g = f
-        upperbound = INFINITY
-        lowerbound = -INFINITY
-        while(lowerbound<upperbound):
-            # print("new mtd ",lowerbound,upperbound)
-            b = max(g,lowerbound+1)
-            tmp = self.alphaBeta(board,old_move,flag,depth,b-1,b)
-            if datetime.datetime.utcnow() - self.begin >= self.timeLimit :
-                self.limitReach = 1
-                break
-            g = tmp[0]
-            if(g<b):
-                upperbound = g
-            else:
-                lowerbound = g
-        return tmp
+    def transReset(self):
+        resetVal = 1
+        self.trans.clear()
 
     def move(self, board, old_move, flag):
         self.begin = datetime.datetime.utcnow()
-        self.count += 1
         self.limitReach = 0
-        self.trans.clear()
-        # print(self.trans.items())
-        # print("entering the move for ", self.count)
+        self.transReset()
+
         toret = board.find_valid_move_cells(old_move)[0]
+
         for i in xrange(3,100):
-            self.trans.clear()
+            self.transReset()
             self.limit = i
-            # print("in depth ",i)
-            blah = self.alphaBeta(board, old_move, flag, 1, -INFINITY, INFINITY)
-            getval = blah[1]
-            # print("returned from depth ",i)
-            # print("Returning finally ",blah[0])
-            if(self.limitReach == 0):
+            root = 1
+            prune = self.alphaBeta(board, old_move, flag, root, -INFINITY, INFINITY)
+            getval = prune[1]
+            if(self.limitReach == root - 1):
                 toret = getval
             else:
                 break
-        # toret = self.alphaBeta(board, old_move, flag, 1, -10000000, 10000000)[1]
+        # print (i)
         # print("toret",toret)
         return toret[0], toret[1]
