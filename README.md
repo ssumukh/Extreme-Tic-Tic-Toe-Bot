@@ -30,7 +30,7 @@ The board structure is as shown above. We will refer to the whole board as BigBo
 ![winningPatterns](./imgs/winningPatterns.png)
 
 ### Usage
-python simulator.py <option>
+python simulator.py < option >
 
 The option can be -->
 
