@@ -2,7 +2,7 @@
 Game playing agent for the 4x4x4x4 Tic Tac Toe Game
 
 ### Board
-It is a 4x4x4 board, which looks like this
+It is a 4x4x4x4 board, which looks like this
 
 ![board image](./imgs/board.png)
 
